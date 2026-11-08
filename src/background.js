@@ -1,5 +1,5 @@
 import { AppError, applySpend, balanceOf, createCard, cleanLast4, deleteCard, requireCard, setBalance, undoEntry } from './lib/cards.js';
-import { allMerchants, conflictingMerchant, customMerchant, findMerchantByHost, originPatterns, parseDomains } from './lib/match.js';
+import { allMerchants, conflictingMerchant, customMerchant, findMerchantByHost, isCheckoutPage, originPatterns, parseDomains } from './lib/match.js';
 import { loadState, mutate, withLock } from './lib/store.js';
 import { createVault, decodeCode, encodeCode, forgetKey, openVault, recallKey, rememberKey } from './lib/vault.js';
 import { applyImport, buildExport } from './lib/transfer.js';
@@ -8,7 +8,6 @@ import { runScan } from './lib/scanner.js';
 
 const SCRIPT_ID = 'gift-card-toast';
 const SCAN_ALARM = 'gmail-scan';
-const SEEN_PREFIX = 'seen:';
 const DAY = 86_400_000;
 
 let catalog = null;
@@ -320,7 +319,7 @@ function badgeText(cents) {
 }
 
 const pageHandlers = {
-  'page/visit': async (_message, sender) => {
+  'page/visit': async ({ path }, sender) => {
     const state = await loadState();
     const merchant = findMerchantByHost(await merchantsFor(state), hostOf(sender.url));
     if (!merchant) return { show: false };
@@ -334,14 +333,10 @@ const pageHandlers = {
     chrome.action.setBadgeBackgroundColor({ tabId: sender.tab.id, color: '#2b3fd1' });
     chrome.action.setBadgeText({ tabId: sender.tab.id, text: badgeText(totalCents) });
 
-    const seenKey = `${SEEN_PREFIX}${sender.tab.id}:${merchant.id}`;
-    const seen = await chrome.storage.session.get(seenKey);
-    if (seen[seenKey]) return { show: false };
-    await chrome.storage.session.set({ [seenKey]: true });
-
     const now = Date.now();
     return {
       show: true,
+      checkout: isCheckoutPage(hostOf(sender.url), path),
       merchantName: merchant.name,
       balanceUrl: merchant.balanceUrl,
       totalCents,
@@ -404,13 +399,6 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 chrome.permissions.onAdded.addListener(() => syncContentScripts());
 chrome.permissions.onRemoved.addListener(() => syncContentScripts());
-
-chrome.tabs.onRemoved.addListener(async (tabId) => {
-  const all = await chrome.storage.session.get(null);
-  const prefix = `${SEEN_PREFIX}${tabId}:`;
-  const stale = Object.keys(all).filter((k) => k.startsWith(prefix));
-  if (stale.length) await chrome.storage.session.remove(stale);
-});
 
 chrome.notifications.onClicked.addListener(() => {
   chrome.tabs.create({ url: chrome.runtime.getURL('src/popup/popup.html') });

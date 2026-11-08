@@ -20,6 +20,24 @@ export function findMerchantByEmailDomain(merchants, senderDomain) {
   return merchants.find((m) => m.emailDomains.some((d) => hostMatches(senderDomain, d))) ?? null;
 }
 
+const CHECKOUT_SEGMENTS = new Set([
+  'cart', 'viewcart', 'view-cart', 'mycart', 'my-cart', 'shoppingcart', 'shopping-cart',
+  'basket', 'bag', 'mybag', 'my-bag', 'shoppingbag', 'shopping-bag',
+  'check-out', 'securecheckout', 'secure-checkout', 'payment',
+  'placeorder', 'place-order', 'review-order', 'order-review',
+]);
+
+// Compares whole path pieces, so a product like /p/cart-organizer doesn't count.
+export function isCheckoutPage(host, path) {
+  if (/^(checkout|cart|pay)\./i.test(host)) return true;
+  const text = String(path ?? '').toLowerCase();
+  if (text.includes('/gp/buy/')) return true;
+  return text.split(/[/#?&]+/).some((part) => {
+    const segment = part.replace(/\.(html?|jsp|aspx?|do|php)$/, '');
+    return CHECKOUT_SEGMENTS.has(segment) || segment.startsWith('checkout');
+  });
+}
+
 // What the add form should start with for the site being viewed: a known
 // store, or a new store prefilled with this website.
 export function siteDefault(merchants, host) {

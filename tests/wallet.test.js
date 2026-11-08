@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { applySpend, balanceOf, createCard, deleteCard, formatCents, parseDollars, setBalance, undoEntry } from '../src/lib/cards.js';
-import { allMerchants, cardsHereFirst, siteDefault, conflictingMerchant, customMerchant, findMerchantByEmailDomain, findMerchantByHost, hostMatches, normalizeDomain, originPatterns, parseDomains } from '../src/lib/match.js';
+import { allMerchants, cardsHereFirst, isCheckoutPage, siteDefault, conflictingMerchant, customMerchant, findMerchantByEmailDomain, findMerchantByHost, hostMatches, normalizeDomain, originPatterns, parseDomains } from '../src/lib/match.js';
 import { createVault, decodeCode, encodeCode, openVault } from '../src/lib/vault.js';
 import { applyImport, buildExport } from '../src/lib/transfer.js';
 import { buildQuery, decodeBody, extractMessage, senderDomain } from '../src/lib/gmail.js';
@@ -96,6 +96,34 @@ describe('stores with several websites', () => {
     expect(manifest.host_permissions).toContain('*://*/*');
     const popup = readFileSync(new URL('../src/popup/popup.js', import.meta.url), 'utf8');
     expect(popup.match(/requestSites\(/g)).toHaveLength(2); // the definition and "Turn on reminders"
+  });
+
+  it.each([
+    ['www.barnesandnoble.com', '/cart/'],
+    ['www.barnesandnoble.com', '/checkout/'],
+    ['secure-oldnavy.gap.com', '/shopping-bag'],
+    ['www.sephora.com', '/basket'],
+    ['shop.lululemon.com', '/shop/cart'],
+    ['www.cvs.com', '/shop/cart'],
+    ['www.amazon.com', '/gp/buy/spc/handlers/display.html'],
+    ['www.amazon.com', '/gp/cart/view.html'],
+    ['www.example.com', '/shop#/checkout/payment'],
+    ['www.example.com', '/checkout-step-2'],
+    ['www.example.com', '/ShoppingCart.aspx'],
+    ['checkout.example.com', '/'],
+  ])('treats %s%s as a cart or checkout page', (host, path) => {
+    expect(isCheckoutPage(host, path)).toBe(true);
+  });
+
+  it.each([
+    ['www.example.com', '/'],
+    ['www.example.com', '/p/cart-organizer/123'],
+    ['www.example.com', '/shop/handbag'],
+    ['www.example.com', '/shop/bags'],
+    ['www.example.com', '/gift-card-balance'],
+    ['www.example.com', undefined],
+  ])('does not treat %s%s as a cart or checkout page', (host, path) => {
+    expect(isCheckoutPage(host, path)).toBe(false);
   });
 
   it('starts the add form on the site being viewed', () => {

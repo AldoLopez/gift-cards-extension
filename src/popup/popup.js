@@ -137,7 +137,6 @@ function sitesBlock(card) {
       render();
       return;
     }
-    requestSites(domains);
     view.addingSite = null;
     act(() => send('merchants/addSites', { merchantId: card.merchantId, sites: domains }));
   };
@@ -233,7 +232,6 @@ function addForm() {
       if (!domains) return fail(errorText('merchant-required'));
     }
 
-    requestSites(domains);
     view.adding = false;
     const card = { merchantId, label: label.value, last4: last4.value, note: note.value, balanceCents, code: { number: number.value, pin: pin.value } };
     act(() => send('cards/add', { card, custom }));

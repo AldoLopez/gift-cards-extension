@@ -91,6 +91,13 @@ describe('merchant matching', () => {
 describe('stores with several websites', () => {
   const catalog = JSON.parse(readFileSync(new URL('../data/merchants.json', import.meta.url), 'utf8'));
 
+  it('has all-site access up front, so saving a card never waits on a prompt', () => {
+    const manifest = JSON.parse(readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'));
+    expect(manifest.host_permissions).toContain('*://*/*');
+    const popup = readFileSync(new URL('../src/popup/popup.js', import.meta.url), 'utf8');
+    expect(popup.match(/requestSites\(/g)).toHaveLength(2); // the definition and "Turn on reminders"
+  });
+
   it('parses a typed list and rejects a bad entry', () => {
     expect(parseDomains('https://www.a.com/x, b.com;c.com a.com')).toEqual(['a.com', 'b.com', 'c.com']);
     expect(parseDomains('a.com, nope')).toBeNull();

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Gift cards</title>
+  <link rel="stylesheet" href="popup.css">
+  <style>
+    body { min-width: 360px; max-width: 420px; margin: 0 auto; }
+    #app { padding: 14px; }
+    .top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .total { font-size: 34px; font-weight: 700; line-height: 1.1; }
+    .total-note { color: var(--mute); font-size: 13px; }
+    .banner { margin-top: 10px; background: var(--warn-bg); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+    .banner form { display: flex; gap: 6px; margin-top: 6px; }
+    h2 { font-size: 14px; margin-top: 18px; }
+    .notice { margin-top: 8px; background: var(--surface); border-left: 3px solid var(--warn); border-radius: 0 8px 8px 0; padding: 8px 10px; font-size: 13px; }
+    .notice-subject { color: var(--mute); overflow-wrap: anywhere; }
+    .notice-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+    .list { margin-top: 12px; display: grid; gap: 8px; }
+    .card { background: var(--surface); border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: 7px 1fr; }
+    .band { grid-row: 1 / span 2; }
+    .card-head { all: unset; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; }
+    .card-head:focus-visible { outline: 2px solid var(--foil); outline-offset: -2px; }
+    .merchant { font-weight: 600; }
+    .sub { color: var(--mute); font-size: 12px; }
+    .balance { font-size: 17px; font-weight: 700; text-align: right; }
+    .detail { padding: 0 12px 12px; display: grid; gap: 10px; font-size: 13px; }
+    .inline { display: flex; gap: 6px; align-items: center; }
+    .inline input { max-width: 110px; }
+    .links { display: flex; flex-wrap: wrap; gap: 12px; }
+    .empty { margin-top: 14px; background: var(--surface); border-radius: 12px; padding: 16px; }
+    .add { margin-top: 12px; }
+    .activity { margin-top: 6px; font-size: 13px; }
+    .activity > div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); }
+    .undone { color: var(--mute); text-decoration: line-through; }
+    .form-actions { display: flex; gap: 12px; align-items: center; margin-top: 14px; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  </style>
+</head>
+<body>
+  <main id="app"></main>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

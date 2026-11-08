@@ -1,0 +1,133 @@
+:root {
+  color-scheme: light dark;
+  --paper: #eef0f8;
+  --surface: #ffffff;
+  --ink: #1a1f4b;
+  --mute: #565d84;
+  --foil: #2b3fd1;
+  --on-foil: #ffffff;
+  --silver: #c3c8d6;
+  --silver-line: #aeb4c6;
+  --warn: #8f4a00;
+  --warn-bg: #fdf0dd;
+  --line: #d9dcea;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #15183a;
+    --surface: #222650;
+    --ink: #eef0ff;
+    --mute: #adb4dc;
+    --foil: #93a3ff;
+    --on-foil: #11143a;
+    --silver: #59607f;
+    --silver-line: #6b7294;
+    --warn: #ffc56e;
+    --warn-bg: #3b2f22;
+    --line: #363b68;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+[hidden] { display: none !important; }
+
+h1, h2, p { margin: 0; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+:focus-visible { outline: 2px solid var(--foil); outline-offset: 2px; }
+
+.btn {
+  cursor: pointer;
+  background: var(--foil);
+  color: var(--on-foil);
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-weight: 600;
+}
+
+.btn:disabled { opacity: .55; cursor: default; }
+
+.quiet {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  color: var(--foil);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.quiet.danger { color: var(--warn); }
+
+a { color: var(--foil); text-underline-offset: 2px; }
+
+input[type="text"], input[type="password"], select, textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--silver-line);
+  border-radius: 7px;
+  padding: 6px 8px;
+}
+
+.field { display: block; margin-top: 10px; }
+.field > span { display: block; font-size: 13px; color: var(--mute); margin-bottom: 3px; }
+
+.error { color: var(--warn); font-size: 13px; margin-top: 8px; }
+.money { font-variant-numeric: tabular-nums; }
+
+/* The scratch-off panel: the one flourish, borrowed from the back of a real card. */
+.scratch {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.scratch-cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border: 0;
+  width: 100%;
+  font-weight: 600;
+  color: var(--ink);
+  background:
+    repeating-linear-gradient(115deg, transparent 0 3px, rgb(255 255 255 / .28) 3px 5px),
+    var(--silver);
+  transition: clip-path .35s ease-out;
+  clip-path: inset(0 0 0 0);
+}
+
+.scratch.open .scratch-cover { clip-path: inset(0 0 0 100%); pointer-events: none; }
+
+.code-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+}
+
+.code-value { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .scratch-cover { transition: none; }
+}

@@ -1,0 +1,19 @@
+[
+  { "id": "amazon", "name": "Amazon", "domains": ["amazon.com"], "emailDomains": ["amazon.com"], "balanceUrl": "https://www.amazon.com/gc/redeem" },
+  { "id": "target", "name": "Target", "domains": ["target.com"], "emailDomains": ["target.com"], "balanceUrl": "https://www.target.com/guest/gift-card-balance" },
+  { "id": "walmart", "name": "Walmart", "domains": ["walmart.com"], "emailDomains": ["walmart.com"], "balanceUrl": null },
+  { "id": "starbucks", "name": "Starbucks", "domains": ["starbucks.com"], "emailDomains": ["starbucks.com"], "balanceUrl": "https://www.starbucks.com/gift" },
+  { "id": "bestbuy", "name": "Best Buy", "domains": ["bestbuy.com"], "emailDomains": ["bestbuy.com"], "balanceUrl": null },
+  { "id": "homedepot", "name": "The Home Depot", "domains": ["homedepot.com"], "emailDomains": ["homedepot.com"], "balanceUrl": null },
+  { "id": "lowes", "name": "Lowe's", "domains": ["lowes.com"], "emailDomains": ["lowes.com"], "balanceUrl": null },
+  { "id": "apple", "name": "Apple", "domains": ["apple.com"], "emailDomains": ["apple.com"], "balanceUrl": null },
+  { "id": "sephora", "name": "Sephora", "domains": ["sephora.com"], "emailDomains": ["sephora.com"], "balanceUrl": null },
+  { "id": "nike", "name": "Nike", "domains": ["nike.com"], "emailDomains": ["nike.com"], "balanceUrl": "https://www.nike.com/gift-cards" },
+  { "id": "macys", "name": "Macy's", "domains": ["macys.com"], "emailDomains": ["macys.com"], "balanceUrl": null },
+  { "id": "kohls", "name": "Kohl's", "domains": ["kohls.com"], "emailDomains": ["kohls.com"], "balanceUrl": null },
+  { "id": "ulta", "name": "Ulta Beauty", "domains": ["ulta.com"], "emailDomains": ["ulta.com"], "balanceUrl": "https://www.ulta.com/guestservices/gift-cards" },
+  { "id": "rei", "name": "REI", "domains": ["rei.com"], "emailDomains": ["rei.com"], "balanceUrl": null },
+  { "id": "etsy", "name": "Etsy", "domains": ["etsy.com"], "emailDomains": ["etsy.com"], "balanceUrl": "https://www.etsy.com/giftcards" },
+  { "id": "doordash", "name": "DoorDash", "domains": ["doordash.com"], "emailDomains": ["doordash.com"], "balanceUrl": null },
+  { "id": "uber", "name": "Uber", "domains": ["uber.com", "ubereats.com"], "emailDomains": ["uber.com"], "balanceUrl": null }
+]

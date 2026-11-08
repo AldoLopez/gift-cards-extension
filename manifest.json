@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Gift Card Reminder",
+  "version": "0.1.0",
+  "description": "Reminds you of your gift cards on the sites where you can spend them.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAst2LOTQHvGHJef7ZG4duRO2PjxISXYzWBX8vXwuvzQWsQmk1jm8cE1nBo9BMQ8stbA8ucO94SxfVRCGfPFc9w3Ap+RyJL8fYAiSDDvjo5rbR2yFs32WK2ArW2TUY/ob8ZEKEljMuXIHoBjG4AE4fb6yIpwuwOdyz9sTKl8FQTEt44annqRH6ywbKtziNwMKRA9X2vxao0odCcxRz2ojr2oiRX5oKdU7ahMAfn2KnAU8YpN8nqX4sMqbtdqg7+vu2XST7LTTD4D+r8YgkWclIMBFChdolHSta5SELtdW+NyjRiOh79uxTvcV+V2NTeE9Z8jm1x48y2rduBWBXsXXthQIDAQAB",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "Gift cards",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png"
+    }
+  },
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "scripting",
+    "identity",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://gmail.googleapis.com/*"
+  ],
+  "optional_host_permissions": [
+    "*://*/*"
+  ],
+  "oauth2": {
+    "client_id": "REPLACE_WITH_YOUR_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/gmail.readonly"
+    ]
+  }
+}

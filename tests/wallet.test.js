@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { applySpend, balanceOf, createCard, deleteCard, formatCents, parseDollars, setBalance, undoEntry } from '../src/lib/cards.js';
-import { customMerchant, findMerchantByEmailDomain, findMerchantByHost, hostMatches, normalizeDomain, originPatterns } from '../src/lib/match.js';
+import { allMerchants, conflictingMerchant, customMerchant, findMerchantByEmailDomain, findMerchantByHost, hostMatches, normalizeDomain, originPatterns, parseDomains } from '../src/lib/match.js';
 import { createVault, decodeCode, encodeCode, openVault } from '../src/lib/vault.js';
 import { applyImport, buildExport } from '../src/lib/transfer.js';
 import { buildQuery, decodeBody, extractMessage, senderDomain } from '../src/lib/gmail.js';
@@ -84,6 +85,56 @@ describe('merchant matching', () => {
     expect(normalizeDomain('nodots')).toBeNull();
     expect(customMerchant('', 'example.com')).toBeNull();
     expect(originPatterns(['a.com'])).toEqual(['*://*.a.com/*']);
+  });
+});
+
+describe('stores with several websites', () => {
+  const catalog = JSON.parse(readFileSync(new URL('../data/merchants.json', import.meta.url), 'utf8'));
+
+  it('parses a typed list and rejects a bad entry', () => {
+    expect(parseDomains('https://www.a.com/x, b.com;c.com a.com')).toEqual(['a.com', 'b.com', 'c.com']);
+    expect(parseDomains('a.com, nope')).toBeNull();
+    expect(parseDomains('')).toBeNull();
+  });
+
+  it('creates a custom store with several websites', () => {
+    expect(customMerchant('Shop', 'a.com, b.com')).toMatchObject({ id: 'custom:a.com', domains: ['a.com', 'b.com'] });
+  });
+
+  it('merges added websites without changing the original store', () => {
+    const merged = allMerchants([target], [], { target: ['target-outlet.com'] });
+    expect(findMerchantByHost(merged, 'shop.target-outlet.com').id).toBe('target');
+    expect(target.domains).toEqual(['target.com']);
+  });
+
+  it('spots a website another store already has, but not its own', () => {
+    expect(conflictingMerchant([target], ['target.com'], 'other')).toBe(target);
+    expect(conflictingMerchant([target], ['shop.target.com'], 'other')).toBe(target);
+    expect(conflictingMerchant([target], ['target.com'], 'target')).toBeNull();
+    expect(conflictingMerchant([target], ['nottarget.com'], 'other')).toBeNull();
+  });
+
+  it('matches one Gap card on all of its brands', () => {
+    for (const host of ['www.gap.com', 'oldnavy.gap.com', 'bananarepublic.gap.com', 'athleta.gap.com', 'www.oldnavy.com']) {
+      expect(findMerchantByHost(catalog, host).id).toBe('gap');
+    }
+    expect(findMerchantByHost(catalog, 'www.cb2.com').id).toBe('crateandbarrel');
+    expect(findMerchantByHost(catalog, 'shop.lululemon.com').id).toBe('lululemon');
+  });
+
+  it('keeps every built-in website unique and valid', () => {
+    for (const m of catalog) {
+      expect(parseDomains(m.domains)).toEqual(m.domains);
+      expect(conflictingMerchant(catalog, m.domains, m.id)).toBeNull();
+    }
+  });
+
+  it('carries added websites through import without touching other stores', async () => {
+    const file = { format: 'gift-card-wallet', version: 1, cards: [{ merchant: { id: 'target', name: 'Target', domains: ['target.com', 'target-outlet.com', 'other.com'] }, last4: '1234', balanceCents: 100 }] };
+    const other = { id: 'other', name: 'Other', domains: ['other.com'], emailDomains: ['other.com'], balanceUrl: null };
+    const dest = emptyState();
+    await applyImport(dest, [target, other], file, {}, 2);
+    expect(dest.extraDomains.target).toEqual(['target-outlet.com']);
   });
 });
 

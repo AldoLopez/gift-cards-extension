@@ -3,7 +3,7 @@
 
 import { AppError, balanceOf, cleanLast4, createCard } from './cards.js';
 import { decodeCode, encodeCode, deriveKey, encryptText, decryptText, fromBase64, toBase64 } from './vault.js';
-import { normalizeDomain } from './match.js';
+import { conflictingMerchant, normalizeDomain } from './match.js';
 
 const FORMAT = 'gift-card-wallet';
 const ITERATIONS = 600_000;
@@ -91,6 +91,12 @@ export async function applyImport(state, merchants, file, options, now) {
       merchant = parsed;
       state.customMerchants.push(merchant);
       merchants.push(merchant);
+    } else {
+      const extras = state.extraDomains[merchant.id] ?? [];
+      const added = parsed.domains.filter(
+        (d) => !merchant.domains.includes(d) && !extras.includes(d) && !conflictingMerchant(merchants, [d], merchant.id),
+      );
+      if (added.length) state.extraDomains[merchant.id] = [...extras, ...added];
     }
     if (isDuplicate(state, merchant.id, last4, label)) {
       skipped += 1;

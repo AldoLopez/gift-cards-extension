@@ -6,6 +6,7 @@ export function emptyState() {
     cards: [],
     ledger: [],
     customMerchants: [],
+    extraDomains: {},
     settings: { setupDone: false, storageMode: 'local', gmailEnabled: false },
     vault: null,
     scan: { lastScanAt: null, processed: {}, reviews: [], alerts: [], needsReconnect: false, lastError: null },

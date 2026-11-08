@@ -1,5 +1,5 @@
 import { AppError, applySpend, balanceOf, createCard, cleanLast4, deleteCard, requireCard, setBalance, undoEntry } from './lib/cards.js';
-import { allMerchants, customMerchant, findMerchantByHost, originPatterns } from './lib/match.js';
+import { allMerchants, conflictingMerchant, customMerchant, findMerchantByHost, originPatterns, parseDomains } from './lib/match.js';
 import { loadState, mutate, withLock } from './lib/store.js';
 import { createVault, decodeCode, encodeCode, forgetKey, openVault, recallKey, rememberKey } from './lib/vault.js';
 import { applyImport, buildExport } from './lib/transfer.js';
@@ -19,7 +19,14 @@ async function getCatalog() {
 }
 
 async function merchantsFor(state) {
-  return allMerchants(await getCatalog(), state.customMerchants);
+  return allMerchants(await getCatalog(), state.customMerchants, state.extraDomains);
+}
+
+// Websites the person can take back off a store: anything they added, but
+// never a built-in site or a custom store's last one.
+function removableDomains(state, merchantId) {
+  const custom = state.customMerchants.find((m) => m.id === merchantId);
+  return [...(state.extraDomains[merchantId] ?? []), ...(custom && custom.domains.length > 1 ? custom.domains : [])];
 }
 
 function hostOf(url) {
@@ -40,7 +47,11 @@ function syncContentScripts() {
     const used = new Set(state.cards.map((c) => c.merchantId));
     const matches = [];
     for (const merchant of await merchantsFor(state)) {
-      if (used.has(merchant.id) && (await hasSiteAccess(merchant))) matches.push(...originPatterns(merchant.domains));
+      if (!used.has(merchant.id)) continue;
+      // Checked per site, so one ungranted website doesn't switch off the rest.
+      for (const pattern of originPatterns(merchant.domains)) {
+        if (await chrome.permissions.contains({ origins: [pattern] })) matches.push(pattern);
+      }
     }
     const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [SCRIPT_ID] });
     if (!matches.length) {
@@ -78,6 +89,7 @@ async function appState() {
       merchantId: c.merchantId,
       merchantName: byId.get(c.merchantId)?.name ?? 'Unknown store',
       domains: byId.get(c.merchantId)?.domains ?? [],
+      removableDomains: removableDomains(state, c.merchantId),
       balanceUrl: byId.get(c.merchantId)?.balanceUrl ?? null,
       label: c.label,
       last4: c.last4,
@@ -152,13 +164,45 @@ const appHandlers = {
     await mutate(async (state) => {
       let merchantId = card.merchantId;
       if (custom) {
-        const merchant = customMerchant(custom.name, custom.domain);
+        const merchant = customMerchant(custom.name, custom.domains);
         if (!merchant) throw new AppError('invalid-domain');
         merchantId = merchant.id;
-        if (!state.customMerchants.some((m) => m.id === merchant.id)) state.customMerchants.push(merchant);
+        if (!state.customMerchants.some((m) => m.id === merchant.id)) {
+          if (conflictingMerchant(await merchantsFor(state), merchant.domains, merchant.id)) throw new AppError('site-in-use');
+          state.customMerchants.push(merchant);
+        }
       }
       const code = await encodeCode(state.settings.storageMode, card.code, sessionKey);
       createCard(state, { ...card, merchantId, code }, Date.now());
+    });
+    await syncContentScripts();
+  },
+
+  'merchants/addSites': async ({ merchantId, sites }) => {
+    const domains = parseDomains(sites);
+    if (!domains) throw new AppError('invalid-domain');
+    await mutate(async (state) => {
+      const merchants = await merchantsFor(state);
+      const merchant = merchants.find((m) => m.id === merchantId);
+      if (!merchant) throw new AppError('merchant-required');
+      if (conflictingMerchant(merchants, domains, merchantId)) throw new AppError('site-in-use');
+      const added = domains.filter((d) => !merchant.domains.includes(d));
+      state.extraDomains[merchantId] = [...(state.extraDomains[merchantId] ?? []), ...added];
+    });
+    await syncContentScripts();
+  },
+
+  'merchants/removeSite': async ({ merchantId, domain }) => {
+    await mutate((state) => {
+      if (!removableDomains(state, merchantId).includes(domain)) throw new AppError('entry-not-found');
+      const extras = state.extraDomains[merchantId] ?? [];
+      if (extras.includes(domain)) {
+        state.extraDomains[merchantId] = extras.filter((d) => d !== domain);
+      } else {
+        const custom = state.customMerchants.find((m) => m.id === merchantId);
+        custom.domains = custom.domains.filter((d) => d !== domain);
+        custom.emailDomains = custom.emailDomains.filter((d) => d !== domain);
+      }
     });
     await syncContentScripts();
   },

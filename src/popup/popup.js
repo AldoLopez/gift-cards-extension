@@ -1,9 +1,9 @@
 import { bandColor, cardTitle, errorText, h, send, timeAgo } from './ui.js';
 import { formatCents, parseDollars } from '../lib/cards.js';
-import { normalizeDomain, originPatterns } from '../lib/match.js';
+import { conflictingMerchant, originPatterns, parseDomains } from '../lib/match.js';
 
 const app = document.getElementById('app');
-const view = { adding: false, editing: null, expanded: null, deleting: null, revealed: new Map(), error: '' };
+const view = { adding: false, addingSite: null, editing: null, expanded: null, deleting: null, revealed: new Map(), error: '' };
 let data = null;
 
 async function refresh() {
@@ -122,6 +122,38 @@ function editForm(card) {
       h('button', { class: 'quiet', type: 'button', onclick: () => { view.editing = null; render(); } }, 'Cancel')));
 }
 
+function sitesBlock(card) {
+  const input = h('input', { type: 'text', placeholder: 'example-outlet.com', 'aria-label': 'Website to add' });
+  const addSite = (e) => {
+    e.preventDefault();
+    const domains = parseDomains(input.value);
+    if (!domains) {
+      view.error = errorText('invalid-domain');
+      render();
+      return;
+    }
+    if (conflictingMerchant(data.merchants, domains, card.merchantId)) {
+      view.error = errorText('site-in-use');
+      render();
+      return;
+    }
+    requestSites(domains);
+    view.addingSite = null;
+    act(() => send('merchants/addSites', { merchantId: card.merchantId, sites: domains }));
+  };
+  return h('div', {},
+    h('div', { class: 'sites-label' }, 'Reminders show on'),
+    h('div', { class: 'chips' }, card.domains.map((domain) =>
+      h('span', { class: 'chip' }, domain,
+        card.removableDomains.includes(domain) && h('button', {
+          'aria-label': `Remove ${domain}`,
+          onclick: () => act(() => send('merchants/removeSite', { merchantId: card.merchantId, domain })),
+        }, '×')))),
+    view.addingSite === card.id
+      ? h('form', { class: 'site-form', onsubmit: addSite }, input, h('button', { class: 'btn' }, 'Add'))
+      : h('button', { class: 'quiet', onclick: () => { view.addingSite = card.id; render(); } }, 'Add a website'));
+}
+
 function cardDetail(card) {
   if (view.editing === card.id) return h('div', { class: 'detail' }, editForm(card));
   const input = h('input', { type: 'text', inputMode: 'decimal', value: (card.balanceCents / 100).toFixed(2), 'aria-label': 'New balance in dollars' });
@@ -139,6 +171,7 @@ function cardDetail(card) {
     card.hasCode && scratchPanel(card),
     h('form', { class: 'inline', onsubmit: saveBalance }, input, h('button', { class: 'btn' }, 'Update balance')),
     card.note && h('p', {}, card.note),
+    sitesBlock(card),
     h('div', { class: 'links' },
       card.balanceUrl && h('a', { href: card.balanceUrl, target: '_blank', rel: 'noopener' }, 'Check balance on their site'),
       !card.siteAccess && h('button', { class: 'quiet', onclick: () => { requestSites(card.domains); window.setTimeout(refresh, 800); } }, 'Turn on reminders'),
@@ -163,10 +196,11 @@ function addForm() {
   const options = [...data.merchants].sort((a, b) => a.name.localeCompare(b.name)).map((m) => h('option', { value: m.id }, m.name));
   const store = h('select', { required: true }, h('option', { value: '' }, 'Choose a store'), options, h('option', { value: '__other' }, 'Another store'));
   const customName = h('input', { type: 'text', placeholder: 'Store name' });
-  const customDomain = h('input', { type: 'text', placeholder: 'example.com' });
+  const customSites = h('input', { type: 'text', placeholder: 'example.com, example-outlet.com' });
   const customFields = h('div', { hidden: true },
     h('label', { class: 'field' }, h('span', {}, 'Store name'), customName),
-    h('label', { class: 'field' }, h('span', {}, 'Website'), customDomain));
+    h('label', { class: 'field' }, h('span', {}, 'Websites'), customSites),
+    h('p', { class: 'hint' }, 'If the card works on several sites, separate them with commas.'));
   store.addEventListener('change', () => { customFields.hidden = store.value !== '__other'; });
   const balance = h('input', { type: 'text', inputMode: 'decimal', placeholder: '25.00', required: true });
   const label = h('input', { type: 'text', placeholder: 'Birthday card from Mom' });
@@ -189,10 +223,10 @@ function addForm() {
     let custom = null;
     let merchantId = store.value;
     if (store.value === '__other') {
-      const domain = normalizeDomain(customDomain.value);
-      if (!domain || !customName.value.trim()) return fail(errorText('invalid-domain'));
-      domains = [domain];
-      custom = { name: customName.value, domain };
+      domains = parseDomains(customSites.value);
+      if (!domains || !customName.value.trim()) return fail(errorText('invalid-domain'));
+      if (conflictingMerchant(data.merchants, domains, `custom:${domains[0]}`)) return fail(errorText('site-in-use'));
+      custom = { name: customName.value, domains };
       merchantId = '';
     } else {
       domains = data.merchants.find((m) => m.id === store.value)?.domains;

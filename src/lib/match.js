@@ -25,13 +25,32 @@ export function originPatterns(domains) {
   return domains.map((d) => `*://*.${d}/*`);
 }
 
-export function customMerchant(name, domainInput) {
-  const domain = normalizeDomain(domainInput);
-  const cleanName = String(name ?? '').trim().slice(0, 60);
-  if (!domain || !cleanName) return null;
-  return { id: `custom:${domain}`, name: cleanName, domains: [domain], emailDomains: [domain], balanceUrl: null };
+// Accepts typed text ("a.com, b.com") or an array. Null if any entry is invalid.
+export function parseDomains(input) {
+  const parts = (Array.isArray(input) ? input : String(input ?? '').split(/[\s,;]+/)).filter(Boolean);
+  const domains = parts.map(normalizeDomain);
+  if (!domains.length || domains.includes(null)) return null;
+  return [...new Set(domains)];
 }
 
-export function allMerchants(catalog, custom) {
-  return [...catalog, ...custom];
+export function customMerchant(name, sites) {
+  const domains = parseDomains(sites);
+  const cleanName = String(name ?? '').trim().slice(0, 60);
+  if (!domains || !cleanName) return null;
+  return { id: `custom:${domains[0]}`, name: cleanName, domains, emailDomains: domains, balanceUrl: null };
+}
+
+// Each website can belong to one store, or the wrong card would be shown there.
+export function conflictingMerchant(merchants, domains, selfId) {
+  return (
+    merchants.find(
+      (m) => m.id !== selfId && m.domains.some((e) => domains.some((d) => hostMatches(d, e) || hostMatches(e, d))),
+    ) ?? null
+  );
+}
+
+export function allMerchants(catalog, custom, extraDomains = {}) {
+  return [...catalog, ...custom].map((m) =>
+    extraDomains[m.id]?.length ? { ...m, domains: [...m.domains, ...extraDomains[m.id]] } : m,
+  );
 }

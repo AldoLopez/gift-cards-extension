@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { applySpend, balanceOf, createCard, deleteCard, formatCents, parseDollars, setBalance, undoEntry } from '../src/lib/cards.js';
-import { allMerchants, conflictingMerchant, customMerchant, findMerchantByEmailDomain, findMerchantByHost, hostMatches, normalizeDomain, originPatterns, parseDomains } from '../src/lib/match.js';
+import { allMerchants, cardsHereFirst, siteDefault, conflictingMerchant, customMerchant, findMerchantByEmailDomain, findMerchantByHost, hostMatches, normalizeDomain, originPatterns, parseDomains } from '../src/lib/match.js';
 import { createVault, decodeCode, encodeCode, openVault } from '../src/lib/vault.js';
 import { applyImport, buildExport } from '../src/lib/transfer.js';
 import { buildQuery, decodeBody, extractMessage, senderDomain } from '../src/lib/gmail.js';
@@ -96,6 +96,19 @@ describe('stores with several websites', () => {
     expect(manifest.host_permissions).toContain('*://*/*');
     const popup = readFileSync(new URL('../src/popup/popup.js', import.meta.url), 'utf8');
     expect(popup.match(/requestSites\(/g)).toHaveLength(2); // the definition and "Turn on reminders"
+  });
+
+  it('starts the add form on the site being viewed', () => {
+    expect(siteDefault(catalog, 'oldnavy.gap.com')).toEqual({ merchantId: 'gap' });
+    expect(siteDefault(catalog, 'www.new-store.com')).toEqual({ domain: 'new-store.com' });
+    expect(siteDefault(catalog, 'localhost')).toBeNull();
+    expect(siteDefault(catalog, '')).toBeNull();
+  });
+
+  it('lists cards for the current store first and keeps the rest in order', () => {
+    const cards = [{ id: 1, merchantId: 'a' }, { id: 2, merchantId: 'b' }, { id: 3, merchantId: 'c' }, { id: 4, merchantId: 'b' }];
+    expect(cardsHereFirst(cards, 'b').map((c) => c.id)).toEqual([2, 4, 1, 3]);
+    expect(cardsHereFirst(cards, undefined)).toBe(cards);
   });
 
   it('parses a typed list and rejects a bad entry', () => {

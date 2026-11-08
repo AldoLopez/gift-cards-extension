@@ -20,6 +20,21 @@ export function findMerchantByEmailDomain(merchants, senderDomain) {
   return merchants.find((m) => m.emailDomains.some((d) => hostMatches(senderDomain, d))) ?? null;
 }
 
+// What the add form should start with for the site being viewed: a known
+// store, or a new store prefilled with this website.
+export function siteDefault(merchants, host) {
+  if (!host) return null;
+  const merchant = findMerchantByHost(merchants, host);
+  if (merchant) return { merchantId: merchant.id };
+  const domain = normalizeDomain(host);
+  return domain ? { domain } : null;
+}
+
+export function cardsHereFirst(cards, merchantId) {
+  if (!merchantId) return cards;
+  return [...cards.filter((c) => c.merchantId === merchantId), ...cards.filter((c) => c.merchantId !== merchantId)];
+}
+
 // In Chrome, *.example.com also covers example.com itself.
 export function originPatterns(domains) {
   return domains.map((d) => `*://*.${d}/*`);

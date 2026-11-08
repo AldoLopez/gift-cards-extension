@@ -1,10 +1,21 @@
 import { bandColor, cardTitle, errorText, h, send, timeAgo } from './ui.js';
 import { formatCents, parseDollars } from '../lib/cards.js';
-import { conflictingMerchant, originPatterns, parseDomains } from '../lib/match.js';
+import { cardsHereFirst, conflictingMerchant, originPatterns, parseDomains, siteDefault } from '../lib/match.js';
 
 const app = document.getElementById('app');
 const view = { adding: false, addingSite: null, editing: null, expanded: null, deleting: null, revealed: new Map(), error: '' };
 let data = null;
+let currentHost = '';
+
+async function loadCurrentSite() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const url = new URL(tab.url);
+    if (url.protocol === 'http:' || url.protocol === 'https:') currentHost = url.hostname;
+  } catch {
+    // No readable page behind the popup: the list and form just use their defaults.
+  }
+}
 
 async function refresh() {
   data = await send('app/state');
@@ -201,6 +212,14 @@ function addForm() {
     h('label', { class: 'field' }, h('span', {}, 'Websites'), customSites),
     h('p', { class: 'hint' }, 'If the card works on several sites, separate them with commas.'));
   store.addEventListener('change', () => { customFields.hidden = store.value !== '__other'; });
+  const preset = siteDefault(data.merchants, currentHost);
+  if (preset?.merchantId) {
+    store.value = preset.merchantId;
+  } else if (preset?.domain) {
+    store.value = '__other';
+    customSites.value = preset.domain;
+    customFields.hidden = false;
+  }
   const balance = h('input', { type: 'text', inputMode: 'decimal', placeholder: '25.00', required: true });
   const label = h('input', { type: 'text', placeholder: 'Birthday card from Mom' });
   const last4 = h('input', { type: 'text', inputMode: 'numeric', maxLength: 4 });
@@ -271,14 +290,15 @@ function render() {
       h('div', {},
         h('h1', { class: 'total money' }, formatCents(total)),
         h('div', { class: 'total-note' }, count === 1 ? 'on 1 gift card' : `across ${count} gift cards`)),
-      h('button', { class: 'quiet', onclick: () => chrome.runtime.openOptionsPage() }, 'Settings')),
+      h('div', { class: 'top-actions' },
+        h('button', { class: 'quiet', onclick: () => chrome.runtime.openOptionsPage() }, 'Settings'),
+        !view.adding && h('button', { class: 'btn', onclick: () => { view.adding = true; render(); } }, 'Add a gift card'))),
     ...banners(),
     ...(view.adding ? [addForm()] : [
       ...notices().flat(),
       count
-        ? h('section', { class: 'list' }, data.cards.map(cardRow))
+        ? h('section', { class: 'list' }, cardsHereFirst(data.cards, siteDefault(data.merchants, currentHost)?.merchantId).map(cardRow))
         : h('div', { class: 'empty' }, 'Add a gift card and you\'ll be reminded of it on that store\'s website.'),
-      h('div', { class: 'add' }, h('button', { class: 'btn', onclick: () => { view.adding = true; render(); } }, 'Add a gift card')),
       ...activity(),
     ]),
   );
@@ -289,4 +309,4 @@ function render() {
   });
 }
 
-refresh();
+loadCurrentSite().then(refresh);

@@ -7,7 +7,8 @@
   <style>
     body { min-width: 360px; max-width: 420px; margin: 0 auto; }
     #app { padding: 14px; }
-    .top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .top-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }
     .total { font-size: 34px; font-weight: 700; line-height: 1.1; }
     .total-note { color: var(--mute); font-size: 13px; }
     .banner { margin-top: 10px; background: var(--warn-bg); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
@@ -36,7 +37,6 @@
     .site-form { display: flex; gap: 6px; margin-top: 6px; }
     .hint { color: var(--mute); font-size: 12px; margin-top: 3px; }
     .empty { margin-top: 14px; background: var(--surface); border-radius: 12px; padding: 16px; }
-    .add { margin-top: 12px; }
     .activity { margin-top: 6px; font-size: 13px; }
     .activity > div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); }
     .undone { color: var(--mute); text-decoration: line-through; }
